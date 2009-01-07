@@ -12,7 +12,8 @@
 @import <AppKit/AppKit.j>
 @import <AppKit/CPFlashView.j>
 @import <AppKit/CPFlashMovie.j>
-@import "/shared/SMSoundManager.j?user=Guest&pass="
+@import "/shared/CPQuicktimeController.j?user=Guest&pass="
+//@import "/shared/SMSoundManager.j?user=Guest&pass="
 @import "/shared/DTTrackView.j?user=Guest&pass="
 @import "/shared/DTArtistTable.j?user=Guest&pass="
 @import "/shared/DTSegmentedControl.j?user=Guest&pass="
@@ -53,7 +54,8 @@ var theAppControl;
     CPString flashURL;
     BOOL flashEnabled;
     
-    SMSoundManager theSoundManager;
+    CPQuicktimeController QT;
+    //SMSoundManager theSoundManager;
     BOOL isSongLoaded;
     BOOL isPaused;
     int nextTrack;
@@ -70,8 +72,10 @@ var theAppControl;
         toolbar = [[CPToolbar alloc] initWithIdentifier:"DT Toolbar"];
         
     var bounds = [contentView bounds];
-        
-    theSoundManager = [[SMSoundManager alloc] init];
+      
+    QT = [[CPQuicktimeController alloc] initWithContentsOfFile:"nope.mp3" identifier:nil]; //ContentsOfFile:"nope.mp3" i
+    window.QTPlayer = QT;    
+    //theSoundManager = [[SMSoundManager alloc] init];
     isSongLoaded = NO;
     isPaused = YES;
     
@@ -140,6 +144,9 @@ var theAppControl;
         
     [contentView addSubview: libraryTable]; 
     [theWindow orderFront:self];
+    
+    //[CPMenu setMenuBarVisible:YES];
+    
     CPLog("starting connection");  
     connection = [[CPURLConnection alloc] initWithRequest:[CPURLRequest requestWithURL:"/index.php?username=Guest&password=&action=render&render=Playlists.php"] delegate:self startImmediately:NO];
     CPLog("connection created");
@@ -156,9 +163,9 @@ var theAppControl;
     CPLog(sessionEndedErrorWindow.CPAlertErrorImage);
     
     [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(setSong:) name:"setSong" object:libraryTable];
-    [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(setTime:) name:"pos" object:theSoundManager];
+    [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(setTime:) name:"CPQuicktimeControllerTimeChanged" object:QT];
     [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(changePos:) name:"changePos" object:[[[[theWindow toolbar] items] objectAtIndex:5] view]];
-    [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(songDidFinish:) name:"SongEnded" object:theSoundManager];
+    [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(songDidFinish:) name:"CPQuicktimeControllerEnded" object:QT];
     [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(changeView:) name:"ChangeView" object:[[[[theWindow toolbar] items] objectAtIndex:7] view]];
 }
 
@@ -411,18 +418,20 @@ var theAppControl;
 -(void)setSong:(CPNotification)aNotification
 {
     CPLog("I have recived the song");
-    if([theSoundManager isLoaded])
-	{
+    //if([theSoundManager isLoaded])
+	//{
         var aSong = [[aNotification userInfo] objectForKey:"song"];
-        [theSoundManager stopSound];
-        [theSoundManager playSound:aSong["url"]];
-        [theSoundManager setVolume:75];
+        //[theSoundManager stopSound];
+        //[theSoundManager playSound:aSong["url"]];
+        //[theSoundManager setVolume:75];
+        //[QT stop];
+        [QT setMovieURL:aSong["url"]];
+        [QT setVolume:75];
         isSongLoaded = YES;
         isPaused = NO;
         nextTrack = 0;
-        
         [[[[[theWindow toolbar] items] objectAtIndex:5] view] setSong:aSong];
-    }
+    //}
 }
 
 -(void)setCoverflowSong:(Object)theSong
@@ -431,13 +440,15 @@ var theAppControl;
     if([theSoundManager isLoaded])
 	{
         var aSong = theSong;
-        [theSoundManager stopSound];
-        [theSoundManager playSound:aSong["url"]];
-        [theSoundManager setVolume:75];
+        //[theSoundManager stopSound];
+        //[theSoundManager playSound:aSong["url"]];
+        //[theSoundManager setVolume:75];
+        [QT stop];
+        [QT setMovieURL:aSong["url"]];
+        [QT setVolume:75];
         isSongLoaded = YES;
         isPaused = NO;
         nextTrack = 0;
-        
         [[[[[theWindow toolbar] items] objectAtIndex:5] view] setSong:aSong];
     }
 }
@@ -456,19 +467,21 @@ var theAppControl;
 -(void)playPauseSong
 {
     CPLog("here" + name);
-	if([theSoundManager isLoaded])
-	{
+	//if([theSoundManager isLoaded])
+	//{
 		if(isSongLoaded)
 		{
 			if(isPaused)
 			{
-				[theSoundManager resumeSound];
+				//[theSoundManager resumeSound];
+				[QT resume];
 				isPaused = NO;
 				//[self setIcon:"pause"];
 			}
 			else
 			{
-				[theSoundManager pauseSound];
+				//[theSoundManager pauseSound];
+				[QT pause];
 				isPaused = YES;
 				//[self setIcon:"play"];
 			}
@@ -477,19 +490,20 @@ var theAppControl;
 		{
 			//get the first item in the song table
 		}
-	}
+	//}
 }
 
 -(void)setVolume:(int)vol
 {
-    [theSoundManager setVolume:vol];
+    //[theSoundManager setVolume:vol];
+    [QT setVolume:vol];
 }
 
--(void)setTime:(CPNotification)aNotification{
-    var info = [aNotification userInfo];
-	var aux = [info objectForKey:"time"];
-	CPLog("aux: " + aux);
-    [[[[[theWindow toolbar] items] objectAtIndex:5] view] setTime:aux];
+-(void)setTime:(CPTimer)aTimer
+{
+    var time = [QT currentTime];
+	CPLog("time: " + time);
+    [[[[[theWindow toolbar] items] objectAtIndex:5] view] setTime:time];
     [[[[[theWindow toolbar] items] objectAtIndex:5] view] setNeedsDisplay:YES];
 }
 
@@ -497,7 +511,8 @@ var theAppControl;
     var info = [aNotification userInfo];
 	var aux = [info objectForKey:"pos"];
 	CPLog("aux: " + aux);
-    [theSoundManager setSoundPosition:aux];
+    //[theSoundManager setSoundPosition:aux];
+    [QT setCurrentTime:aux];
 }
 
 -(void)songDidFinish:(CPNotification)aNote
@@ -509,24 +524,34 @@ var theAppControl;
 -(void)nextTrack{
 	nextTrack++;
 	var nextSong = [libraryTable objectAtIndex:([libraryTable getSelectedItem]+nextTrack)];
-	[theSoundManager stopSound];
-	[theSoundManager playSound:nextSong["url"]];
-    [theSoundManager setVolume:75];	
-    [[[[[theWindow toolbar] items] objectAtIndex:5] view] setSong:nextSong];
+	
+	if(nextSong)
+	{
+	   //[theSoundManager stopSound];
+	   //[theSoundManager playSound:nextSong["url"]];
+        //[theSoundManager setVolume:75];	
+        [QT stop];
+        [QT setMovieURL:nextSong["url"]];
+        [QT setVolume:75];
+        [[[[[theWindow toolbar] items] objectAtIndex:5] view] setSong:nextSong];
+        return;
+    }
 
 }
 
 -(void)previousTrack{
 	if(([libraryTable getSelectedItem]+(nextTrack-1)) >= 0)
 	{
-	   nextTrack--;
-	   var nextSong = [libraryTable objectAtIndex:([libraryTable getSelectedItem]+nextTrack)];
-	   [theSoundManager stopSound];
-	   [theSoundManager playSound:nextSong["url"]];
-        [theSoundManager setVolume:75];	
+        nextTrack--;
+        var nextSong = [libraryTable objectAtIndex:([libraryTable getSelectedItem]+nextTrack)];
+        //[theSoundManager stopSound];
+        //[theSoundManager playSound:nextSong["url"]];
+        //[theSoundManager setVolume:75];	
+        [QT stop];
+        [QT setMovieURL:nextSong["url"]];
+        [QT setVolume:75];
         [[[[[theWindow toolbar] items] objectAtIndex:5] view] setSong:nextSong];
     }
-
 }
 
 -(void)setIcon:(CPString)aString

@@ -192,7 +192,6 @@ Removes selected items
     var cellPos = (CPRectGetWidth([self bounds]) - 150)/3;
     //CPLog("cell pos: " + CPRectGetWidth([self frame]));
     theSong = anObject;
-    CPLog("Here");
     if(!titleView)
     {   
         titleView = [[CPTextField alloc] initWithFrame:CGRectInset( [self bounds], 0, 0)];
@@ -200,10 +199,7 @@ Removes selected items
         [titleView setTextColor: [CPColor blackColor]];
         [self addSubview: titleView];
     }
-    CPLog("here 2");
-    CPLog(theSong["name"]);
     [titleView setStringValue: theSong["name"]];
-    CPLog("here 3");
     [titleView setAutoresizingMask: CPViewWidthSizable | CPViewMinXMargin | CPViewMaxXMargin];
     [titleView sizeToFit];
     [titleView setFrameOrigin: CGPointMake(5,0.0)];
@@ -243,9 +239,7 @@ Removes selected items
     [time setStringValue: [self getTime:theSong["Time"]]];
     [time setAutoresizingMask: CPViewWidthSizable | CPViewMinXMargin | CPViewMaxXMargin];
     [time sizeToFit];
-    [time setFrameOrigin: CGPointMake(CPRectGetWidth([self bounds])-145,0.0)];
-    
-    CPLog("filesize");
+    [time setFrameOrigin: CGPointMake(CPRectGetWidth([self bounds])-145,0.0)];0
     
     if(!filesize)
     {
@@ -254,13 +248,10 @@ Removes selected items
         [filesize setTextColor: [CPColor blackColor]];
         [self addSubview: filesize];
     }
-    CPLog("here 4");
     [filesize setStringValue:[self getFileSize:theSong["Size"]]];
-    CPLog("here 5");
     [filesize setAutoresizingMask: CPViewWidthSizable | CPViewMinXMargin | CPViewMaxXMargin];
     [filesize sizeToFit];
     [filesize setFrameOrigin: CGPointMake(CPRectGetWidth([self bounds])-95,0.0)];
-    CPLog("what");
     //CPLog(theSong["Color"]);
     if(theSong["Color"] == 0)
     {

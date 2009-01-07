@@ -40,13 +40,11 @@
 
 -(id)initWithFrame:(CGRect)aFrame
 {
-    console.log("hey");
     self = [super initWithFrame:aFrame];
     go = NO;
     speed = 1; // change scroll speed with this value
     scrollDiv = _DOMElement.childNodes[0];
     scrollDiv.style.overflow = "hidden";
-    console.log("yp");
     return self;
 }    
 
@@ -70,7 +68,6 @@
         //[self scrollFromBottom];
         //setTimeout("scrollFromBottom()",50);
     }
-    console.log("done");
 }
 
 - (void)recursiveTimerDidFire:(CPTimer)aTimer

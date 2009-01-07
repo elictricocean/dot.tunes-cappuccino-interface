@@ -19,7 +19,11 @@
     CPString _id;
     
     BOOL _isPaused;
-    int _rate;
+}
+
+- (id)initWithIdentifier:(CPString)aID
+{
+    return [self initWithContentsOfFile:"blank.mp3" identifier:aID];
 }
 
 - (id)initWithContentsOfFile:(CPString)aFile identifier:(CPString)aID//plays in background
@@ -43,7 +47,7 @@
  
     if ((navigator.appVersion.indexOf("Mac") > 0) && (navigator.appName.substring(0,9) == "Microsoft") && (parseInt(navigator.appVersion) < 5) )
     { 
-        haveqt = true; 
+        haveqt = YES; 
     }
     
     if(!haveqt)
@@ -138,8 +142,7 @@
     if(!_isPaused && (quicktimeObject.GetRate() > 0))
     {
         _isPaused = YES;
-        _rate = quicktimeObject.GetRate();
-        quicktimeObject.SetRate(0.0);
+        [self stop];
     }
 }
 
@@ -151,8 +154,7 @@
     if(_isPaused && quicktimeObject.GetRate() == 0)
     {
         _isPaused = NO;
-        _rate = nil;
-        quicktimeObject.SetRate(_rate);
+        [self play];
     }
 }
 
@@ -565,6 +567,7 @@
 */
 -(void)setMovieURL:(CPString)aURL
 {
+    console.log(quicktimeObject);
     quicktimeObject.SetURL(aURL);
 } 
 
@@ -926,6 +929,7 @@ Yiddish
 }
 -(void)notificationTimeChanged
 {
+    console.log("time changed");
     [[CPNotificationCenter defaultCenter] postNotificationName:"CPQuicktimeControllerTimeChanged" object:self];
 }
 -(void)notificationVolumeChanged

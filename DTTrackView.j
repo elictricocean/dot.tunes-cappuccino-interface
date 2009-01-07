@@ -11,6 +11,7 @@
     //CPTextField artist;
     //CPTextField album;
     CPSlider timeSlider;
+    CPTimer durationTimer;
     int totalTime;
 }
 
@@ -83,6 +84,12 @@
     return self;
 }	
 
+- (void)awakeFromCib
+{
+    CPLog(window.QTPlayer);
+    [self setTime:[window.QTPlayer duration]];
+}
+
 -(void)setSong:(Object)aSong
 {
     CPLog("got it");
@@ -95,23 +102,35 @@
 	//[album setStringValue:aSong["Album"]];
 	[self setNeedsDisplay:YES];
 	totalTime = aSong["Time"];
+	//[self setTime];
+	durationTimer = [CPTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(recurseTime:) userInfo:nil repeats:YES];
+	CPLog(window.QTPlayer);
 }
 
--(void)setTime:(int)timeInMilis{
+-(void)setTime
+{
+    [durationTimer invalidate];
+    var timeInMilis = [window.QTPlayer currentTime];
     CPLog("milis: " + timeInMilis);
     CPLog("setting position");
     CPLog("total time: " + totalTime);
 	var currTime = (timeInMilis*100)/totalTime;
 	CPLog("time: " + currTime);
-	if(currTime==NULL)
-		return;
+	//if(currTime==NULL)
+		//return;
 		
-	if([timeSlider respondsToSelector:@selector(setValue:)])
-	   CPLog("I cna!");
-	   
 	[timeSlider setValue:currTime];
 	CPLog("time slider is now: " + [timeSlider value]);
 	[timeSlider setNeedsDisplay:YES];
+	if([window.QTPlayer isPlaying])
+	   durationTimer = [CPTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(recurseTime:) userInfo:nil repeats:YES];
+    else
+        CPLog("huzzah");
+}
+
+-(void)recurseTime:(CPTimer)aTimer
+{
+    [self setTime];
 }
 
 - (void)sliderChangedValue:(id)sender

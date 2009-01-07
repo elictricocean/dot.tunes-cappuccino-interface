@@ -19,7 +19,11 @@
     CPString _id;
     
     BOOL _isPaused;
-    int _rate;
+}
+
+- (id)initWithFrame:(CGRect)aFrame
+{
+    return [self initWithFrame:aFrame contentsOfFile:nil];
 }
 
 - (id)initWithFrame:(CGRect)aFrame contentsOfFile:(CPString)aFile//plays in a view
@@ -128,8 +132,7 @@
     if(!_isPaused && (quicktimeObject.GetRate() > 0))
     {
         _isPaused = YES;
-        _rate = quicktimeObject.GetRate();
-        quicktimeObject.SetRate(0.0);
+        [self stop];
     }
 }
 
@@ -141,8 +144,7 @@
     if(_isPaused && quicktimeObject.GetRate() == 0)
     {
         _isPaused = NO;
-        _rate = nil;
-        quicktimeObject.SetRate(_rate);
+        [self play];
     }
 }
 
