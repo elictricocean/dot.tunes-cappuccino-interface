@@ -10,6 +10,7 @@
     CPURLConnection artistConnection;
     CPCollectionView albumView;
     CPArray model;
+    var selectedArtist;
 }
 
 -(id)initWithFrame:(CGRect)aFrame
@@ -146,14 +147,18 @@
         }
         else
         {
-            //[[CPNotificationCenter defaultCenter] postNotificationName:"ChangeArtist" object:self userInfo:[CPDictionary dictionayWithObject:key key:"Letter"]];
             artistConnection = [[CPURLConnection alloc] initWithRequest:[CPURLRequest requestWithURL:"/index.php?username=Guest&password=&action=render&render=ArtistAlbums.php&Artist=" + key] delegate:self startImmediately:NO];
             [artistConnection start];
         }
+        selectedArtist = key;
+        [[CPNotificationCenter defaultCenter] postNotificationName:"ChangeArtist" object:self userInfo:[CPDictionary dictionaryWithObject:key forKey:"Artist"]];
     }
     if(view == albumView)
     {
-        //[[CPNotificationCenter defaultCenter] postNotificationName:"ChangeAlbum" object:self userInfo:[CPDictionary dictionayWithObject:key key:"Artist"]];
+        var info = [CPDictionary dictionary];
+        [info setObject:selectedArtist forKey:"Artist"];
+        [info setObject:key forKey:"Album"];
+        [[CPNotificationCenter defaultCenter] postNotificationName:"ChangeAlbum" object:self userInfo:info];
     }
 }
 

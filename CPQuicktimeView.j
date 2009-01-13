@@ -16,8 +16,6 @@
     
     var quicktimeObject;    
     
-    CPString _id;
-    
     BOOL _isPaused;
 }
 
@@ -32,25 +30,7 @@
     CPLogRegister(CPLogPopup);
     CPLog("here");
     
-    var haveqt = NO;
-    
-    if (navigator.plugins) 
-    {
-        for (i=0; i < navigator.plugins.length; i++ ) 
-        {
-            if (navigator.plugins[i].name.indexOf("QuickTime") >= 0)
-            { 
-                haveqt = YES; 
-            }
-        }
-    }
- 
-    if ((navigator.appVersion.indexOf("Mac") > 0) && (navigator.appName.substring(0,9) == "Microsoft") && (parseInt(navigator.appVersion) < 5) )
-    { 
-        haveqt = true; 
-    }
-    
-    if (!haveqt)
+    if (![self hasQuicktime])
         return nil;      
         
     var qtArgs = new Array(aFile, CGRectGetWidth(aFrame), CGRectGetHeight(aFrame), '', 'AUTOPLAY', 'False', 'EnableJavaScript', 'True', 'postdomevents', 'True', 'emb#NAME' , "CPQuicktimeController" , 'obj#id' , "CPQuicktimeController", 'emb#id', "CPQuicktimeController");  
@@ -108,6 +88,30 @@
     
     return self;
 }
+
++ (BOOL)hasQuicktime
+{
+    var haveqt = NO;
+    
+    if (navigator.plugins) 
+    {
+        for (i=0; i < navigator.plugins.length; i++ ) 
+        {
+            if (navigator.plugins[i].name.indexOf("QuickTime") >= 0)
+            { 
+                haveqt = YES; 
+            }
+        }
+    }
+ 
+    if ((navigator.appVersion.indexOf("Mac") > 0) && (navigator.appName.substring(0,9) == "Microsoft") && (parseInt(navigator.appVersion) < 5) )
+    { 
+        haveqt = YES; 
+    }
+    
+    return haveqt;
+}
+
 //Movie Commands
 
 /*!

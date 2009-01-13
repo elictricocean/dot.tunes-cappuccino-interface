@@ -47,7 +47,7 @@
     
     artistsViewButton = [[CPButton alloc] initWithFrame: CPRectMake(26,CGRectGetHeight(aFrame)/2.0 - 8,25,CPRectGetHeight(aFrame))];
     [artistsViewButton setImage:[[CPImage alloc] initWithContentsOfFile:"Resources/viewArtistEnabled.tiff?user=Guest&pass=" size:CPSizeMake(25, 21)]];
-    [artistsViewButton setAlternateImage:[[CPImage alloc] initWithContentsOfFile:"Resources/viewArtistPressed.tif?user=Guest&pass=" size:CPSizeMake(25, 21)]];
+    [artistsViewButton setAlternateImage:[[CPImage alloc] initWithContentsOfFile:"Resources/viewArtistSelectedPressed.tif?user=Guest&pass=" size:CPSizeMake(25, 21)]];
     [artistsViewButton setBordered:NO];
     [artistsViewButton setTarget:self];
     [artistsViewButton setAction:@selector(click:)];

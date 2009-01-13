@@ -39,8 +39,12 @@ var theAppControl;
     CPURLConnection connection;
     CPURLConnection playlistConnection;
     CPURLConnection searchConnection;
+    CPURLConnection artistConnection;
+    CPURLConnection albumConnection;
     var searchQuery;
     var playlistName;
+    var artistQuery;
+    var albumQuery;
     
     var sessionEndedErrorWindow;
 
@@ -93,7 +97,30 @@ var theAppControl;
 
 	[theWindow setToolbar:toolbar];
 	[theWindow setTitle:"DOT.TUNES"];
-	[[CPApplication sharedApplication] setMainMenu:[[CPMenu alloc] initWithTitle:"DOT.TUNES"]];
+	var mainMenu = [[CPMenu alloc] initWithTitle:"DOT.TUNES"];
+	var fileItem = [[CPMenuItem alloc] initWithTitle:"File" action:nil keyEquivalent:nil];
+	var fileMenu = [[CPMenu alloc] initWithTitle:"fileMenu"];
+	[fileMenu addItemWithTitle:"Shuffle songs in table" action:nil keyEquivalent:"b"];
+	[fileMenu addItem:[CPMenuItem separatorItem]];
+	[fileMenu addItemWithTitle:"Bookmark current song..." action:nil keyEquivalent:"b"];
+	[fileMenu addItemWithTitle:"Remove bookmark current song..." action:nil keyEquivalent:nil];
+	[fileMenu addItem:[CPMenuItem separatorItem]];
+	[fileMenu addItemWithTitle:"Rate current song..." action:nil keyEquivalent:nil];//Admin
+	[fileMenu addItem:[CPMenuItem separatorItem]];
+	[fileMenu addItemWithTitle:"Download current song..." action:nil keyEquivalent:"d"];//if available
+	[fileMenu addItemWithTitle:"Play currently playing song in owners iTunes..." action:nil keyEquivalent:nil];
+	[fileItem setSubmenu:fileMenu];
+	var shareItem = [[CPMenuItem alloc] initWithTitle:"Share" action:nil keyEquivalent:nil];
+	var shareMenu = [[CPMenu alloc] initWithTitle:"shareMenu"];
+	[shareMenu addItemWithTitle:"RSS feed for songs in table..." action:nil keyEquivalent:"r"];
+	[shareMenu addItemWithTitle:"Podcast for songs in table..." action:nil keyEquivalent:"p"];
+	[shareMenu addItemWithTitle:"M3U for songs in table..." action:nil keyEquivalent:"p"];
+	[shareMenu addItem:[CPMenuItem separatorItem]];
+	[shareMenu addItemWithTitle:"Setup flash player" action:nil keyEquivalent:nil];
+	[shareItem setSubmenu:shareMenu];
+	[mainMenu addItem:fileItem];
+	[mainMenu addItem:shareItem]; 
+	[[CPApplication sharedApplication] setMainMenu:mainMenu];
 	
 	var listScrollView = [[CPScrollView alloc] initWithFrame: CGRectMake(0, 0, 199, CGRectGetHeight(bounds)-59)];
     [listScrollView setAutohidesScrollers: YES];
@@ -145,13 +172,9 @@ var theAppControl;
     [contentView addSubview: libraryTable]; 
     [theWindow orderFront:self];
     
-    //[CPMenu setMenuBarVisible:YES];
+    [CPMenu setMenuBarVisible:YES];
     
-    CPLog("starting connection");  
     connection = [[CPURLConnection alloc] initWithRequest:[CPURLRequest requestWithURL:"/index.php?username=Guest&password=&action=render&render=Playlists.php"] delegate:self startImmediately:NO];
-    CPLog("connection created");
-    CPLog([connection description]);
-    CPLog("connection created222");
     [connection start];
     [self addPlaylist:"all" withName:"___all___"];
     
@@ -167,12 +190,16 @@ var theAppControl;
     [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(changePos:) name:"changePos" object:[[[[theWindow toolbar] items] objectAtIndex:5] view]];
     [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(songDidFinish:) name:"CPQuicktimeControllerEnded" object:QT];
     [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(changeView:) name:"ChangeView" object:[[[[theWindow toolbar] items] objectAtIndex:7] view]];
+    [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(changeArtist:) name:"ChangeArtist" object:artistTableView];
+    [[CPNotificationCenter defaultCenter] addObserver:self selector:@selector(changeAlbum:) name:"ChangeAlbum" object:artistTableView];
 }
 
 -(void)setAllMusicView
 {
     libraryTableModel = nil;
-    [self changeView:"Artists"];
+        
+    [[[[[theWindow toolbar] items] objectAtIndex:7] view] setSegmentWithName:"Artists"];
+    //[self changeView:"Artists"];
 }
 
 - (CPArray)toolbarAllowedItemIdentifiers:(CPToolbar)aToolbar
@@ -233,7 +260,7 @@ var theAppControl;
 	}
 	else if(anItemIdentifier == volumeItemIdentifier)
     {
-        [toolbarItem setView: [[volumeView alloc] initWithFrame:CGRectMake(0, 0, 180, 50)]];
+        [toolbarItem setView: [[volumeView alloc] initWithFrame:CGRectMake(0, 0, 180, 32)]];
         [toolbarItem setMinSize:CGSizeMake(180, 50)];//180 50
         [toolbarItem setMaxSize:CGSizeMake(180, 50)];
     }
@@ -293,6 +320,14 @@ var theAppControl;
             var url = result[x]["playlist_tracks_url"];
             [self addPlaylist:url withName:name];
         }
+         var listIndex = [[playlistCollectionView selectionIndexes] firstIndex];
+        CPLog(listIndex);   
+        if (listIndex == -1)
+        {
+            CPLog("woo");
+            [playlistCollectionView setSelectionIndexes:[CPIndexSet indexSetWithIndex:0]];
+        }
+        //[self setAllMusicView];
         connection = nil;
     }
     if(playlistConnection == aConnection)
@@ -351,6 +386,66 @@ var theAppControl;
         if(flashEnabled)
             [self changeView:"Coverflow"];
     }
+    if(artistConnection == aConnection)
+    {
+        CPLog("artist connection");
+        try
+        {
+            CPLog("Now");
+            var result = CPJSObjectCreateWithJSON(data.replace(/\n/g, ""));
+            CPLog([result description]);
+        }
+        catch(e)
+        {
+            CPLog("Error");
+            //CPLog(e);
+            return [self connection:aConnection didFailWithError: e];
+        }
+ 
+        // do stuff with result
+        //CPLog([result description]);
+        [libraryTable setModel:result];
+        
+        libraryTableModel = result;
+        if(artistTableViewEnabled)
+            [self changeView:"Artists"];
+            
+        flashURL = "Resources/itunesartV5.swf?action=CoverBrowser&DTXml=/flash.html%3Faction=flashsearch%26id=g4qok7in%26s1=" + escape(artistQuery) + "%26Type=Artist%26CoverBrowse=true%26size=small%26ftype=any%26limit=50%26offset=0%26foo=bar.xml";
+        if(flashEnabled)
+            [self changeView:"Coverflow"];
+        playlistConnection = nil;
+    }
+    if(albumConnection == aConnection)
+    {
+        CPLog("album connection");
+        try
+        {
+            CPLog("Now");
+            var result = CPJSObjectCreateWithJSON(data.replace(/\n/g, ""));
+            CPLog([result description]);
+        }
+        catch(e)
+        {
+            CPLog("Error");
+            //CPLog(e);
+            return [self connection:aConnection didFailWithError: e];
+        }
+ 
+        // do stuff with result
+        //CPLog([result description]);
+        [libraryTable setModel:result];
+        
+        libraryTableModel = result;
+        if(artistTableViewEnabled)
+            [self changeView:"Artists"];
+            
+        flashURL = "Resources/itunesartV5.swf?action=CoverBrowser&DTXml=/flash.html%3Faction=flashsearch%26id=qojd4iqi%26s1=" + escape(albumQuery) + "%26Type=Album%26CoverBrowse=true%26size=small%26ftype=any%26limit=50%26offset=0%26foo=bar.xml";
+        if(flashEnabled)
+            [self changeView:"Coverflow"];
+        playlistConnection = nil;
+    }
+
+    
     //CPLog("Nope");
 }
  
@@ -584,7 +679,7 @@ var theAppControl;
 	CPLog("aux: " + view);
 	if([view isEqualToString:"List"])
 	{
-	   [[[[[theWindow toolbar] items] objectAtIndex:7] view] setSegmentWithName:"List"];
+	   //[[[[[theWindow toolbar] items] objectAtIndex:7] view] setSegmentWithName:"List"];
 	   flashEnabled = NO;
 	   [artistTableView removeFromSuperview];
 	   [flashView removeFromSuperview];
@@ -598,7 +693,7 @@ var theAppControl;
 	   //artistView = [[DTArtistTable alloc] initWithFrame:CGRectMake(200, 300, CGRectGetWidth([[theWindow contentView] bounds]) - 200, (CGRectGetHeight([[theWindow contentView] bounds])-241)) model:nil];
 	   if(libraryTableModel != nil)
 	   {
-            [[[[[theWindow toolbar] items] objectAtIndex:7] view] setSegmentWithName:"Artists"];
+            //[[[[[theWindow toolbar] items] objectAtIndex:7] view] setSegmentWithName:"Artists"];
             artistViewEnabled = YES;
             [artistTableView setModel:libraryTableModel];
 	       [[theWindow contentView] addSubview:artistTableView];
@@ -617,13 +712,31 @@ var theAppControl;
 	   [libraryTable setFrame:CGRectMake(200, 300, CGRectGetWidth([[theWindow contentView] bounds]) - 200, (CGRectGetHeight([[theWindow contentView] bounds])-241))];//300
 	   if(flashURL != nil)
 	   {
-	       [[[[[theWindow toolbar] items] objectAtIndex:7] view] setSegmentWithName:"Coverflow"];
+	       //[[[[[theWindow toolbar] items] objectAtIndex:7] view] setSegmentWithName:"Coverflow"];
 	       flashEnabled = YES;
 	       [flashView setFlashMovie:[CPFlashMovie flashMovieWithFile:flashURL]];
 	       [[theWindow contentView] addSubview:flashView];
 	   }
     }
 }
+
+- (void)changeArtist:(CPNotification)aNotification
+{
+    artistQuery = [[aNotification userInfo] objectForKey:"Artist"];
+    var url = "/index.php?username=Guest&password=&action=render&render=AllArtistTrax.php&Artist=" + escape(artistQuery);
+    artistConnection = [[CPURLConnection alloc] initWithRequest:[CPURLRequest requestWithURL:url] delegate:self startImmediately:NO];
+    [artistConnection start];
+}
+
+- (void)changeAlbum:(CPNotification)aNotification
+{
+    artistQuery = [[aNotification userInfo] objectForKey:"Artist"];
+    albumQuery = [[aNotification userInfo] objectForKey:"Album"];
+    var url = "/index.php?username=Guest&password=&action=render&render=ArtistTrax.php&Artist=" + escape(artistQuery) + "&Album=" + escape(albumQuery);
+    albumConnection = [[CPURLConnection alloc] initWithRequest:[CPURLRequest requestWithURL:url] delegate:self startImmediately:NO];
+    [albumConnection start];
+}
+
 
 @end
 
